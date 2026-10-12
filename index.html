@@ -156,9 +156,19 @@ footer{padding:20px 0;font-size:11px;color:var(--muted)}
 </div>
 
 <script>
-const STORAGE_KEY = "flowdesk-demo-v1";
+
+const SUPABASE_URL = "https://aspiyuwanda.github.io/FlowDesk/";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_AyATgwiOOMW1pvhR3ueELg_J4_5GOgk";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
+
 let requests = [];
 let editingId = null;
+let currentUser = null;
+
 
 try {
   const saved = localStorage.getItem(STORAGE_KEY);
