@@ -67,14 +67,14 @@ td{padding:16px 18px;border-top:1px solid #eef1f6;font-size:12px;white-space:now
 .s-paid{background:#e0f6eb;color:#16805a}
 .s-attachment-pending{background:#fff0dc;color:#9a5b00}
 .s-completed{background:#d9f7e8;color:#087443}
-.s-rejected{background:#ffe7e9;color:#c43e4d}
+.s-rejected,.s-reject{background:#ffe7e9;color:#c43e4d}
 .actions{display:flex;gap:6px}
 .small-btn{border:1px solid var(--line);background:white;border-radius:6px;padding:6px 8px;font-size:11px}
 .empty{text-align:center;color:var(--muted);padding:40px}
 footer{padding:20px 0;font-size:11px;color:var(--muted)}
 .overlay{position:fixed;inset:0;background:#0d1b2a88;display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
 .overlay.open{display:flex}
-.modal{background:white;border-radius:14px;width:min(560px,100%);max-height:90vh;overflow:auto;padding:25px}
+.modal{background:white;border-radius:14px;width:min(850px,100%);max-height:92vh;overflow:auto;padding:28px}.modal-kicker{font-size:11px;font-weight:800;letter-spacing:1.4px;color:#8b98af;margin-bottom:8px}.modal-title-wrap h2{font-size:27px;letter-spacing:-.5px;margin:0}.modal-banner{background:#f5f7fb;color:#71809a;padding:16px;border-radius:10px;font-size:13px;line-height:1.5;margin-bottom:24px}.readonly-field{background:#f3f6fa!important;color:#71809a!important;font-weight:700!important}.field select{font-weight:600!important}.field input,.field select{min-height:49px}.field textarea{min-height:88px}.modal .notice{margin-top:10px}.modal-head{align-items:flex-start}.close-btn{width:44px;height:44px;font-size:18px}
 .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .field{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:700}
@@ -120,7 +120,7 @@ footer{padding:20px 0;font-size:11px;color:var(--muted)}
       <div><h2 id="tableTitle">Payment Requests</h2><div class="sub">Search, filter, and review requests.</div></div>
       <div class="filters">
         <input id="search" placeholder="Search ID, title, requester..." aria-label="Search requests">
-        <select id="filter"><option value="">All statuses</option><option>Pending</option><option>Review</option><option>Waiting</option><option>Approved</option><option>Finance Request</option><option>Paid</option><option>Attachment Pending</option><option>Completed</option></select>
+        <select id="filter"><option value="">All statuses</option><option>Pending</option><option>Review</option><option>Waiting</option><option>Approved</option><option>Finance Request</option><option>Paid</option><option>Attachment Pending</option><option>Completed</option><option>Reject</option></select>
       </div>
     </div>
     <div class="table-wrap">
@@ -138,19 +138,28 @@ footer{padding:20px 0;font-size:11px;color:var(--muted)}
 
 <div class="overlay" id="overlay">
 <div class="modal">
-  <div class="modal-head"><h2 id="modalTitle">New Payment Request</h2><button class="btn btn-light" id="closeBtn" type="button">✕</button></div>
+  <div class="modal-head">
+    <div class="modal-title-wrap"><div class="modal-kicker">PAYMENT REQUEST</div><h2 id="modalTitle">New request</h2></div>
+    <button class="btn btn-light close-btn" id="closeBtn" type="button" aria-label="Close">✕</button>
+  </div>
+  <div class="modal-banner">After submission, this request is locked for the requester and sent for review.</div>
   <form id="requestForm">
     <div class="form-grid">
-      <label class="field full">Request title<input id="title" required maxlength="120" placeholder="e.g. Vendor invoice payment"></label>
+      <label class="field">Request ID<input id="requestCodePreview" class="readonly-field" readonly value="Generated after submission"></label>
       <label class="field">Requester<input id="requester" required maxlength="100" placeholder="Full name"></label>
-      <label class="field">Amount (IDR)<input id="amountInput" type="number" required min="1" step="1" placeholder="1000000"></label>
-      <label class="field">Entity / Department<input id="entity" maxlength="100" placeholder="Company or department"></label>
+      <label class="field">Department<select id="entity" required><option value="Office">Office</option><option value="Finance">Finance</option><option value="Marketing">Marketing</option><option value="Operations">Operations</option><option value="Human Resources">Human Resources</option><option value="IT">IT</option><option value="Other">Other</option></select></label>
+      <label class="field">Item / purpose<input id="title" required maxlength="120" placeholder="e.g. Office supplies"></label>
+      <label class="field">Amount (IDR)<input id="amountInput" type="number" required min="1" step="1" placeholder="e.g. 250000"></label>
       <label class="field">Due date<input id="dueDate" type="date"></label>
-      <label class="field full">Description<textarea id="description" rows="3" maxlength="1000" placeholder="Payment details..."></textarea></label>
-      <label class="field full">Initial attachment (optional)<input id="attachment" type="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.doc,.docx"></label>
+      <label class="field">Payment method<select id="paymentMethod" required><option value="Bank Transfer">Bank Transfer</option><option value="Virtual Account">Virtual Account</option><option value="E-Wallet">E-Wallet</option><option value="Cash">Cash</option><option value="Other">Other</option></select></label>
+      <label class="field">Account Number / VA Number<input id="accountNumber" maxlength="100" placeholder="Enter destination account / VA number" required></label>
+      <label class="field full">Beneficiary name<input id="beneficiaryName" maxlength="150" placeholder="Enter account holder / recipient name" required></label>
+      <label class="field full">Supporting document (optional)<input id="attachment" type="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.doc,.docx"></label>
+      <div class="field full" id="attachmentHelp" style="font-weight:400;color:#8b98af;font-size:11px">Maximum file size 2 MB. Only the file name is recorded; the file itself is not uploaded.</div>
+      <label class="field full">Additional details (optional)<textarea id="description" rows="3" maxlength="1000" placeholder="Additional payment details..."></textarea></label>
     </div>
-    <div class="notice">Prototype: request disimpan di browser ini saja. File attachment belum diunggah ke server. Jangan masukkan data pembayaran rahasia.</div>
-    <div class="form-actions"><button class="btn btn-light" type="button" id="cancelBtn">Cancel</button><button class="btn" type="submit">Save Request</button></div>
+    <div class="notice">After submission, the request is saved to the company database. Do not attach documents containing passwords or other login credentials.</div>
+    <div class="form-actions"><button class="btn btn-light" type="button" id="cancelBtn">Cancel</button><button class="btn" type="submit">Submit request</button></div>
   </form>
 </div>
 </div>
@@ -260,6 +269,12 @@ function mapRequest(row) {
     requestNumber: row.request_number,
     title: row.title,
     requester: row.requester_name,
+    paymentMethod: row.payment_method || "Bank Transfer",
+    accountNumber: row.account_number || "",
+    beneficiaryName: row.beneficiary_name || "",
+    attachmentName: row.attachment_name || "",
+    description: row.description || "",
+    createdAt: row.created_at || null,
     requesterEmail: row.requester_email,
     requesterId: row.requester_id,
     amount: Number(row.amount),
@@ -404,7 +419,7 @@ function render() {
 
   document.getElementById("rows").innerHTML = list.map(request => `
     <tr>
-      <td class="id">${escapeHTML(request.requestNumber || request.id)}</td>
+      <td class="id">${escapeHTML(request.requestNumber ? ("PR-" + (request.createdAt ? new Date(request.createdAt).toISOString().slice(0, 10).replace(/-/g, "") : "REQUEST") + "-" + String(request.requestNumber).padStart(3, "0")) : request.id)}</td>
       <td>${escapeHTML(request.title)}</td>
       <td>${escapeHTML(request.requester)}</td>
       <td>${escapeHTML(request.date)}</td>
@@ -506,7 +521,9 @@ function openForm() {
   }
 
   document.getElementById("requestForm").reset();
-  document.getElementById("modalTitle").textContent = "New Payment Request";
+  document.getElementById("modalTitle").textContent = "New request";
+  document.getElementById("requester").value = currentUser?.user_metadata?.full_name || currentUser?.email?.split("@")[0] || "";
+  document.getElementById("requestCodePreview").value = "Generated after submission";
   document.getElementById("overlay").classList.add("open");
 }
 
@@ -539,9 +556,19 @@ document.getElementById("requestForm").addEventListener("submit", async event =>
   const entity = document.getElementById("entity").value.trim();
   const dueDate = document.getElementById("dueDate").value;
   const description = document.getElementById("description").value.trim();
+  const paymentMethod = document.getElementById("paymentMethod").value;
+  const accountNumber = document.getElementById("accountNumber").value.trim();
+  const beneficiaryName = document.getElementById("beneficiaryName").value.trim();
+  const attachmentInput = document.getElementById("attachment");
+  const attachmentFile = attachmentInput.files && attachmentInput.files[0];
 
-  if (!title || !requester || !Number.isFinite(amount) || amount <= 0) {
-    alert("Isi judul, requester, dan nominal yang valid.");
+  if (attachmentFile && attachmentFile.size > 2 * 1024 * 1024) {
+    alert("Ukuran dokumen maksimal 2 MB.");
+    return;
+  }
+
+  if (!title || !requester || !entity || !paymentMethod || !accountNumber || !beneficiaryName || !Number.isFinite(amount) || amount <= 0) {
+    alert("Lengkapi requester, department, item/purpose, nominal, metode pembayaran, nomor rekening, dan nama penerima.");
     return;
   }
 
@@ -556,6 +583,10 @@ document.getElementById("requestForm").addEventListener("submit", async event =>
       requester_email: currentUser.email,
       entity: entity || null,
       description: description || null,
+      payment_method: paymentMethod,
+      account_number: accountNumber,
+      beneficiary_name: beneficiaryName,
+      attachment_name: attachmentFile ? attachmentFile.name : null,
       amount,
       due_date: dueDate || null,
       status: "Pending",
@@ -599,8 +630,13 @@ document.getElementById("rows").addEventListener("click", async event => {
       "\nRequester: " + request.requester +
       "\nAmount: " + money(request.amount) +
       "\nStatus: " + request.status +
-      "\nEntity: " + (request.entity || "-") +
-      "\nDue date: " + (request.dueDate || "-")
+      "\nDepartment: " + (request.entity || "-") +
+      "\nDue date: " + (request.dueDate || "-") +
+      "\nPayment method: " + (request.paymentMethod || "-") +
+      "\nAccount / VA: " + (request.accountNumber || "-") +
+      "\nBeneficiary: " + (request.beneficiaryName || "-") +
+      "\nAttachment: " + (request.attachmentName || "-") +
+      "\nDetails: " + (request.description || "-")
     );
     return;
   }
@@ -634,6 +670,7 @@ const transitions = {
   }
 };
 
+  const transition = transitions[action];
   if (!transition) return;
 
   if (request.status !== transition.from) {
