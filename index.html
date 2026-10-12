@@ -420,6 +420,7 @@ function render() {
   View
 </button>
 
+
 ${
   currentRole === "super_admin" || currentRole === "reviewer"
     ? (
@@ -450,10 +451,46 @@ ${
                 Reject
               </button>
             `
-            : ""
+            : request.status === "Approved" &&
+              (currentRole === "super_admin" || currentRole === "finance")
+              ? `
+                <button
+                  class="small-btn"
+                  data-action="paid"
+                  data-id="${escapeHTML(request.id)}"
+                >
+                  Paid
+                </button>
+                <button
+                  class="small-btn"
+                  data-action="waiting"
+                  data-id="${escapeHTML(request.id)}"
+                >
+                  Waiting
+                </button>
+              `
+              : ""
       )
-    : ""
+    : currentRole === "finance" && request.status === "Approved"
+      ? `
+        <button
+          class="small-btn"
+          data-action="paid"
+          data-id="${escapeHTML(request.id)}"
+        >
+          Paid
+        </button>
+        <button
+          class="small-btn"
+          data-action="waiting"
+          data-id="${escapeHTML(request.id)}"
+        >
+          Waiting
+        </button>
+      `
+      : ""
 }
+
         </div>
       </td>
     </tr>
