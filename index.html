@@ -59,15 +59,12 @@ td{padding:16px 18px;border-top:1px solid #eef1f6;font-size:12px;white-space:now
 .id{color:var(--blue);font-weight:800}
 .amount{font-weight:700}
 .status{display:inline-block;padding:6px 9px;border-radius:20px;font-size:10px;font-weight:700}
-.s-pending{background:#edf0f5;color:#586579}
-.s-review{background:#e8edff;color:#3454c5}
-.s-waiting{background:#fff0dc;color:#9a5b00}
-.s-approved{background:#e0f6eb;color:#16805a}
-.s-finance-request{background:#e5f4ff;color:#1469a5}
-.s-paid{background:#e0f6eb;color:#16805a}
-.s-attachment-pending{background:#fff0dc;color:#9a5b00}
-.s-completed{background:#d9f7e8;color:#087443}
-.s-rejected,.s-reject{background:#ffe7e9;color:#c43e4d}
+.s-request{background:#edf0f5;color:#586579}
+.s-waiting-for-review{background:#e8edff;color:#3454c5}
+.s-process-for-payment{background:#e0f6eb;color:#16805a}
+.s-payment-hold{background:#fff0dc;color:#9a5b00}
+.s-paid{background:#d9f7e8;color:#087443}
+.s-reject{background:#ffe7e9;color:#c43e4d}
 .actions{display:flex;gap:6px}
 .small-btn{border:1px solid var(--line);background:white;border-radius:6px;padding:6px 8px;font-size:11px}
 .empty{text-align:center;color:var(--muted);padding:40px}
@@ -90,7 +87,7 @@ footer{padding:20px 0;font-size:11px;color:var(--muted)}
 <div class="app">
 <aside>
   <div class="brand">Flow<span>Desk.</span></div>
-  <div class="tagline">PAYMENT MANAGEMENT</div>
+  <div class="tagline">PAYMENT REQUEST WORKFLOW</div>
   <div class="nav-label">WORKSPACE</div>
   <div class="nav active" data-page="Dashboard">▦ &nbsp; Dashboard</div>
   <div class="nav" data-page="Payment Requests">▤ &nbsp; Payment Requests</div>
@@ -102,7 +99,7 @@ footer{padding:20px 0;font-size:11px;color:var(--muted)}
 <main>
 <header>
   <div class="crumb" id="crumb">Workspace / Dashboard</div>
-  <div class="user"><span class="avatar">A</span><span>Administrator<br><span style="color:#7b8798;font-weight:400">Finance Team</span></span></div>
+  <div class="user"><span class="avatar">A</span><span>FlowDesk User<br><span style="color:#7b8798;font-weight:400">Payment Management</span></span></div>
 </header>
 <div class="content">
   <div class="heading">
@@ -111,16 +108,16 @@ footer{padding:20px 0;font-size:11px;color:var(--muted)}
   </div>
   <div class="stats">
     <div class="card"><div class="stat-top">Total Requests <span class="stat-icon">▤</span></div><div class="stat-value" id="total">0</div><div class="stat-foot">All requests</div></div>
-    <div class="card"><div class="stat-top">Pending / Review <span class="stat-icon">◷</span></div><div class="stat-value" id="pending">0</div><div class="stat-foot">Awaiting action</div></div>
+    <div class="card"><div class="stat-top">Awaiting Action <span class="stat-icon">◷</span></div><div class="stat-value" id="pending">0</div><div class="stat-foot">Request, review, or payment hold</div></div>
     <div class="card"><div class="stat-top">Paid Requests <span class="stat-icon">✓</span></div><div class="stat-value" id="paid">0</div><div class="stat-foot">Payments processed</div></div>
     <div class="card"><div class="stat-top">Total Amount <span class="stat-icon">↗</span></div><div class="stat-value" id="amount" style="font-size:22px">Rp 0</div><div class="stat-foot">All request values</div></div>
   </div>
   <section class="panel">
     <div class="panel-head">
-      <div><h2 id="tableTitle">Payment Requests</h2><div class="sub">Search, filter, and review requests.</div></div>
+      <div><h2 id="tableTitle">Payment Requests</h2><div class="sub">Search and manage payment requests according to your role.</div></div>
       <div class="filters">
         <input id="search" placeholder="Search ID, title, requester..." aria-label="Search requests">
-        <select id="filter"><option value="">All statuses</option><option>Pending</option><option>Review</option><option>Waiting</option><option>Approved</option><option>Finance Request</option><option>Paid</option><option>Attachment Pending</option><option>Completed</option><option>Reject</option></select>
+        <select id="filter"><option value="">All statuses</option><option>Request</option><option>Waiting for Review</option><option>Process for Payment</option><option>Payment Hold</option><option>Reject</option><option>Paid</option></select>
       </div>
     </div>
     <div class="table-wrap">
@@ -142,7 +139,7 @@ footer{padding:20px 0;font-size:11px;color:var(--muted)}
     <div class="modal-title-wrap"><div class="modal-kicker">PAYMENT REQUEST</div><h2 id="modalTitle">New request</h2></div>
     <button class="btn btn-light close-btn" id="closeBtn" type="button" aria-label="Close">✕</button>
   </div>
-  <div class="modal-banner">After submission, this request is locked for the requester and sent for review.</div>
+  <div class="modal-banner">After saving, the request has status Request. Submit it for review when the details are ready.</div>
   <form id="requestForm">
     <div class="form-grid">
       <label class="field">Request ID<input id="requestCodePreview" class="readonly-field" readonly value="Generated after submission"></label>
@@ -158,7 +155,7 @@ footer{padding:20px 0;font-size:11px;color:var(--muted)}
       <div class="field full" id="attachmentHelp" style="font-weight:400;color:#8b98af;font-size:11px">Maximum file size 2 MB. Only the file name is recorded; the file itself is not uploaded.</div>
       <label class="field full">Additional details (optional)<textarea id="description" rows="3" maxlength="1000" placeholder="Additional payment details..."></textarea></label>
     </div>
-    <div class="notice">After submission, the request is saved to the company database. Do not attach documents containing passwords or other login credentials.</div>
+    <div class="notice">The request is saved to the company database. Only the file name is recorded; the document itself is not uploaded yet. Do not attach passwords or login credentials.</div>
     <div class="form-actions"><button class="btn btn-light" type="button" id="cancelBtn">Cancel</button><button class="btn" type="submit">Submit request</button></div>
   </form>
 </div>
@@ -177,7 +174,7 @@ const supabaseClient = window.supabase.createClient(
 
 let requests = [];
 let currentUser = null;
-let currentRole = "requester";
+let currentRole = "admin";
 
 const appElement = document.querySelector(".app");
 const loginScreen = document.createElement("div");
@@ -231,10 +228,11 @@ function showApp() {
   loginScreen.style.display = "none";
   appElement.style.display = "";
   const name = currentUser?.email || "User";
+  const roleLabel = currentRole === "super_admin" ? "Super Admin · Approver" : "Admin · Requester";
   document.querySelector(".user").innerHTML = `
-    <span class="avatar">A</span>
+    <span class="avatar">${escapeHTML(name.charAt(0).toUpperCase())}</span>
     <span>${escapeHTML(name)}
-      <br><span style="color:#7b8798;font-weight:400">${escapeHTML(currentRole)}</span>
+      <br><span style="color:#7b8798;font-weight:400">${escapeHTML(roleLabel)}</span>
     </span>
     <button id="logoutButton" class="btn btn-light" type="button">Logout</button>
   `;
@@ -342,7 +340,7 @@ async function logout() {
   }
 
   currentUser = null;
-  currentRole = "requester";
+  currentRole = "admin";
   requests = [];
   showLogin();
 }
@@ -377,141 +375,101 @@ document.getElementById("loginForm").addEventListener("submit", async event => {
   }
 });
 
+function getVisibleRequests() {
+  // UI filtering is for convenience only; Supabase RLS must enforce the same access.
+  if (currentRole === "super_admin") return requests;
+  return requests.filter(request => request.requesterId === currentUser?.id);
+}
+
 function render() {
   const search = document.getElementById("search").value.trim().toLowerCase();
   const filter = document.getElementById("filter").value;
+  const visibleRequests = getVisibleRequests();
+  const page = document.getElementById("pageTitle").textContent;
 
-  let list = requests.filter(request =>
+  let list = visibleRequests.filter(request =>
     [
       request.id,
       request.requestNumber,
       request.title,
       request.requester,
-      request.entity
+      request.entity,
+      request.requesterEmail
     ].join(" ").toLowerCase().includes(search) &&
     (!filter || request.status === filter)
   );
 
-  const page = document.getElementById("pageTitle").textContent;
-
   if (page === "Payment History") {
-    list = list.filter(request =>
-      ["Paid", "Attachment Pending", "Completed"].includes(request.status)
-    );
+    list = list.filter(request => ["Paid", "Reject"].includes(request.status));
   }
 
   if (page === "Approvals") {
-    list = list.filter(request =>
-      ["Pending", "Review", "Waiting"].includes(request.status)
-    );
+    list = currentRole === "super_admin"
+      ? list.filter(request => ["Waiting for Review", "Process for Payment", "Payment Hold"].includes(request.status))
+      : [];
   }
 
-  document.getElementById("total").textContent = requests.length;
-  document.getElementById("pending").textContent = requests.filter(request =>
-    ["Pending", "Review", "Waiting"].includes(request.status)
+  document.getElementById("total").textContent = visibleRequests.length;
+  document.getElementById("pending").textContent = visibleRequests.filter(request =>
+    ["Request", "Waiting for Review", "Payment Hold"].includes(request.status)
   ).length;
-  document.getElementById("paid").textContent = requests.filter(request =>
-    ["Paid", "Attachment Pending", "Completed"].includes(request.status)
+  document.getElementById("paid").textContent = visibleRequests.filter(request =>
+    request.status === "Paid"
   ).length;
   document.getElementById("amount").textContent = money(
-    requests.reduce((sum, request) => sum + Number(request.amount), 0)
+    visibleRequests.reduce((sum, request) => sum + Number(request.amount), 0)
   );
 
-  document.getElementById("rows").innerHTML = list.map(request => `
-    <tr>
-      <td class="id">${escapeHTML(request.requestNumber ? ("PR-" + (request.createdAt ? new Date(request.createdAt).toISOString().slice(0, 10).replace(/-/g, "") : "REQUEST") + "-" + String(request.requestNumber).padStart(3, "0")) : request.id)}</td>
-      <td>${escapeHTML(request.title)}</td>
-      <td>${escapeHTML(request.requester)}</td>
-      <td>${escapeHTML(request.date)}</td>
-      <td class="amount">${money(request.amount)}</td>
-      <td><span class="status ${statusClass(request.status)}">${escapeHTML(request.status)}</span></td>
-      <td>
-        <div class="actions">
-         <button
-  class="small-btn"
-  data-action="view"
-  data-id="${escapeHTML(request.id)}"
->
-  View
-</button>
+  document.getElementById("rows").innerHTML = list.map(request => {
+    let actions = `
+      <button class="small-btn" data-action="view" data-id="${escapeHTML(request.id)}">View</button>
+    `;
 
+    if (currentRole === "admin" && request.requesterId === currentUser?.id && request.status === "Request") {
+      actions += `<button class="small-btn" data-action="submit-review" data-id="${escapeHTML(request.id)}">Submit for Review</button>`;
+    }
 
-${
-  currentRole === "super_admin" || currentRole === "reviewer"
-    ? (
-        request.status === "Pending"
-          ? `
-            <button
-              class="small-btn"
-              data-action="review"
-              data-id="${escapeHTML(request.id)}"
-            >
-              Start Review
-            </button>
-          `
-          : request.status === "Review"
-            ? `
-              <button
-                class="small-btn"
-                data-action="approve"
-                data-id="${escapeHTML(request.id)}"
-              >
-                Approve
-              </button>
-              <button
-                class="small-btn"
-                data-action="reject"
-                data-id="${escapeHTML(request.id)}"
-              >
-                Reject
-              </button>
-            `
-            : request.status === "Approved" &&
-              (currentRole === "super_admin" || currentRole === "finance")
-              ? `
-                <button
-                  class="small-btn"
-                  data-action="paid"
-                  data-id="${escapeHTML(request.id)}"
-                >
-                  Paid
-                </button>
-                <button
-                  class="small-btn"
-                  data-action="waiting"
-                  data-id="${escapeHTML(request.id)}"
-                >
-                  Waiting
-                </button>
-              `
-              : ""
-      )
-    : currentRole === "finance" && request.status === "Approved"
-      ? `
-        <button
-          class="small-btn"
-          data-action="paid"
-          data-id="${escapeHTML(request.id)}"
-        >
-          Paid
-        </button>
-        <button
-          class="small-btn"
-          data-action="waiting"
-          data-id="${escapeHTML(request.id)}"
-        >
-          Waiting
-        </button>
-      `
-      : ""
-}
+    if (currentRole === "super_admin") {
+      if (request.status === "Waiting for Review") {
+        actions += `
+          <button class="small-btn" data-action="process" data-id="${escapeHTML(request.id)}">Process for Payment</button>
+          <button class="small-btn" data-action="hold" data-id="${escapeHTML(request.id)}">Payment Hold</button>
+          <button class="small-btn" data-action="reject" data-id="${escapeHTML(request.id)}">Reject</button>
+        `;
+      } else if (request.status === "Process for Payment") {
+        actions += `
+          <button class="small-btn" data-action="paid" data-id="${escapeHTML(request.id)}">Mark Paid</button>
+          <button class="small-btn" data-action="hold" data-id="${escapeHTML(request.id)}">Payment Hold</button>
+        `;
+      } else if (request.status === "Payment Hold") {
+        actions += `
+          <button class="small-btn" data-action="continue" data-id="${escapeHTML(request.id)}">Continue to Payment</button>
+          <button class="small-btn" data-action="reject" data-id="${escapeHTML(request.id)}">Reject</button>
+        `;
+      }
+    }
 
-        </div>
-      </td>
-    </tr>
-  `).join("");
+    const requestCode = request.requestNumber
+      ? ("PR-" + (request.createdAt ? new Date(request.createdAt).toISOString().slice(0, 10).replace(/-/g, "") : "REQUEST") + "-" + String(request.requestNumber).padStart(3, "0"))
+      : request.id;
+
+    return `
+      <tr>
+        <td class="id">${escapeHTML(requestCode)}</td>
+        <td>${escapeHTML(request.title)}</td>
+        <td>${escapeHTML(request.requester)}</td>
+        <td>${escapeHTML(request.date)}</td>
+        <td class="amount">${money(request.amount)}</td>
+        <td><span class="status ${statusClass(request.status)}">${escapeHTML(request.status)}</span></td>
+        <td><div class="actions">${actions}</div></td>
+      </tr>
+    `;
+  }).join("");
 
   document.getElementById("empty").hidden = list.length > 0;
+  document.getElementById("empty").textContent = page === "Approvals" && currentRole !== "super_admin"
+    ? "Halaman approval hanya tersedia untuk Super Admin."
+    : "Belum ada request untuk ditampilkan.";
 }
 
 function openForm() {
@@ -589,7 +547,7 @@ document.getElementById("requestForm").addEventListener("submit", async event =>
       attachment_name: attachmentFile ? attachmentFile.name : null,
       amount,
       due_date: dueDate || null,
-      status: "Pending",
+      status: "Request",
       attachment_complete: false
     };
 
@@ -643,39 +601,62 @@ document.getElementById("rows").addEventListener("click", async event => {
 
  
 const transitions = {
-  review: {
-    from: "Pending",
-    to: "Review",
-    label: "Start Review"
-  },
-  approve: {
-    from: "Review",
-    to: "Approved",
-    label: "Approve"
-  },
-  reject: {
-    from: "Review",
-    to: "Reject",
-    label: "Reject"
-  },
-  paid: {
-    from: "Approved",
-    to: "Paid",
-    label: "Mark Paid"
-  },
-  waiting: {
-    from: "Approved",
-    to: "Waiting",
-    label: "Set Waiting"
-  }
-};
+   "submit-review": {
+     from: "Request",
+     to: "Waiting for Review",
+     label: "Submit for Review",
+     roles: ["admin"],
+     ownRequestOnly: true
+   },
+   process: {
+     from: "Waiting for Review",
+     to: "Process for Payment",
+     label: "Process for Payment",
+     roles: ["super_admin"]
+   },
+   hold: {
+     from: ["Waiting for Review", "Process for Payment"],
+     to: "Payment Hold",
+     label: "Payment Hold",
+     roles: ["super_admin"]
+   },
+   reject: {
+     from: ["Waiting for Review", "Payment Hold"],
+     to: "Reject",
+     label: "Reject",
+     roles: ["super_admin"]
+   },
+   continue: {
+     from: "Payment Hold",
+     to: "Process for Payment",
+     label: "Continue to Payment",
+     roles: ["super_admin"]
+   },
+   paid: {
+     from: "Process for Payment",
+     to: "Paid",
+     label: "Mark Paid",
+     roles: ["super_admin"]
+   }
+ };
 
   const transition = transitions[action];
   if (!transition) return;
 
-  if (request.status !== transition.from) {
+  if (!transition.roles.includes(currentRole)) {
+    alert("Role akun lo tidak punya izin untuk tindakan ini.");
+    return;
+  }
+
+  const allowedFrom = Array.isArray(transition.from) ? transition.from : [transition.from];
+  if (!allowedFrom.includes(request.status)) {
     alert("Status request sekarang: " + request.status +
-      ". Aksi ini membutuhkan status " + transition.from + ".");
+      ". Aksi ini tidak tersedia untuk status tersebut.");
+    return;
+  }
+
+  if (transition.ownRequestOnly && request.requesterId !== currentUser?.id) {
+    alert("Lo hanya bisa mengirim pengajuan milik akun lo sendiri.");
     return;
   }
 
@@ -719,10 +700,10 @@ document.querySelectorAll(".nav").forEach(nav => {
       nav.dataset.page === "Dashboard" ? "Payment Requests" : nav.dataset.page;
 
     document.getElementById("pageSub").textContent = {
-      "Dashboard": "Monitor and manage your payment requests.",
+      "Dashboard": "Monitor payment requests based on your role.",
       "Payment Requests": "View and manage payment request records.",
-      "Approvals": "Requests awaiting review or follow-up.",
-      "Payment History": "Requests that have reached the payment stage.",
+      "Approvals": "Review and manage payment decisions. Super Admin only.",
+      "Payment History": "Paid and rejected requests.",
       "Settings": "Application preferences."
     }[nav.dataset.page] || "";
 
