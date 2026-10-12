@@ -605,15 +605,35 @@ document.getElementById("rows").addEventListener("click", async event => {
     return;
   }
 
-  const transitions = {
-    review: { from: "Pending", to: "Review", label: "Start Review" },
-    approve: { from: "Review", to: "Approved", label: "Approve" },
-    reject: { from: "Review", to: "Waiting", label: "Reject" },
-    finance: { from: "Approved", to: "Finance Request", label: "Finance Request" },
-    paid: { from: "Finance Request", to: "Paid", label: "Mark Paid" }
-  };
+ 
+const transitions = {
+  review: {
+    from: "Pending",
+    to: "Review",
+    label: "Start Review"
+  },
+  approve: {
+    from: "Review",
+    to: "Approved",
+    label: "Approve"
+  },
+  reject: {
+    from: "Review",
+    to: "Reject",
+    label: "Reject"
+  },
+  paid: {
+    from: "Approved",
+    to: "Paid",
+    label: "Mark Paid"
+  },
+  waiting: {
+    from: "Approved",
+    to: "Waiting",
+    label: "Set Waiting"
+  }
+};
 
-  const transition = transitions[action];
   if (!transition) return;
 
   if (request.status !== transition.from) {
