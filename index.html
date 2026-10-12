@@ -1,1 +1,313 @@
 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowDesk | Payment Management</title>
+<style>
+:root {
+  --navy:#14243a; --blue:#4263eb; --bg:#f5f7fb;
+  --text:#202b3c; --muted:#7b8798; --line:#e8edf4;
+  --green:#16805a; --amber:#a66a08; --red:#c43e4d;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{display:flex;min-height:100vh}
+aside{width:245px;background:var(--navy);color:white;padding:26px 16px;flex-shrink:0}
+.brand{font-size:25px;font-weight:800;letter-spacing:-1px;padding:0 12px 8px}
+.brand span{color:#8caaff}
+.tagline{font-size:10px;color:#93a3ba;letter-spacing:1.3px;padding:0 12px 28px}
+.nav-label{font-size:10px;color:#8192aa;font-weight:800;letter-spacing:1.4px;margin:22px 12px 10px}
+.nav{padding:12px;border-radius:8px;margin:4px 0;color:#c6d0df;font-size:13px;cursor:pointer}
+.nav:hover,.nav.active{background:#2b405d;color:white}
+main{flex:1;min-width:0}
+header{height:72px;background:white;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 32px}
+.crumb{font-size:12px;color:var(--muted)}
+.user{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700}
+.avatar{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#e7edff;color:var(--blue);font-weight:800}
+.content{padding:30px 32px;max-width:1600px;margin:auto}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:25px}
+h1{font-size:27px;letter-spacing:-.7px;margin:0 0 7px}
+.sub{font-size:12px;color:var(--muted)}
+.btn{border:0;border-radius:8px;padding:11px 15px;background:var(--blue);color:white;font-size:12px;font-weight:700}
+.btn:hover{filter:brightness(.95)}
+.btn-light{background:white;border:1px solid var(--line);color:var(--text)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}
+.card{background:white;border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}
+.stat-top{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
+.stat-icon{font-size:19px;color:var(--blue)}
+.stat-value{font-size:27px;font-weight:800;letter-spacing:-.8px;margin:17px 0 8px;overflow-wrap:anywhere}
+.stat-foot{font-size:11px;color:var(--muted)}
+.panel{background:white;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.panel-head{padding:22px;display:flex;align-items:center;justify-content:space-between;gap:15px}
+h2{font-size:16px;margin:0 0 6px}
+.filters{display:flex;gap:8px}
+input,select,textarea{border:1px solid #dfe5ee;border-radius:7px;padding:10px 11px;background:white;color:var(--text);font-size:12px;min-width:0}
+.filters input{width:210px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;text-align:left}
+th{background:#fafbfd;color:var(--muted);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:14px 18px;white-space:nowrap}
+td{padding:16px 18px;border-top:1px solid #eef1f6;font-size:12px;white-space:nowrap}
+.id{color:var(--blue);font-weight:800}
+.amount{font-weight:700}
+.status{display:inline-block;padding:6px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.s-pending{background:#edf0f5;color:#586579}
+.s-review{background:#e8edff;color:#3454c5}
+.s-waiting{background:#fff0dc;color:#9a5b00}
+.s-approved{background:#e0f6eb;color:#16805a}
+.s-finance-request{background:#e5f4ff;color:#1469a5}
+.s-paid{background:#e0f6eb;color:#16805a}
+.s-attachment-pending{background:#fff0dc;color:#9a5b00}
+.s-completed{background:#d9f7e8;color:#087443}
+.s-rejected{background:#ffe7e9;color:#c43e4d}
+.actions{display:flex;gap:6px}
+.small-btn{border:1px solid var(--line);background:white;border-radius:6px;padding:6px 8px;font-size:11px}
+.empty{text-align:center;color:var(--muted);padding:40px}
+footer{padding:20px 0;font-size:11px;color:var(--muted)}
+.overlay{position:fixed;inset:0;background:#0d1b2a88;display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+.overlay.open{display:flex}
+.modal{background:white;border-radius:14px;width:min(560px,100%);max-height:90vh;overflow:auto;padding:25px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:700}
+.field.full{grid-column:1/-1}
+.field input,.field select,.field textarea{width:100%;font-weight:400}
+.form-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:22px}
+.notice{font-size:11px;color:var(--muted);line-height:1.6;margin-top:14px}
+@media(max-width:1000px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}aside{width:205px}.content{padding:24px 20px}header{padding:0 20px}}
+@media(max-width:650px){.app{display:block}aside{width:100%;padding:15px}.brand{padding:3px 8px 6px}.tagline{padding:0 8px 12px}.nav-label{display:none}.nav{display:inline-block;padding:9px;margin:2px;font-size:11px}header{height:58px;padding:0 15px}.content{padding:20px 12px}.heading{align-items:flex-start}h1{font-size:23px}.stats{gap:9px}.card{padding:14px}.stat-value{font-size:22px}.panel-head{align-items:flex-start;flex-direction:column;padding:16px}.filters{width:100%;flex-wrap:wrap}.filters input{flex:1;width:120px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div class="brand">Flow<span>Desk.</span></div>
+  <div class="tagline">PAYMENT MANAGEMENT</div>
+  <div class="nav-label">WORKSPACE</div>
+  <div class="nav active" data-page="Dashboard">▦ &nbsp; Dashboard</div>
+  <div class="nav" data-page="Payment Requests">▤ &nbsp; Payment Requests</div>
+  <div class="nav" data-page="Approvals">✓ &nbsp; Approvals</div>
+  <div class="nav-label">MANAGEMENT</div>
+  <div class="nav" data-page="Payment History">◷ &nbsp; Payment History</div>
+  <div class="nav" data-page="Settings">⚙ &nbsp; Settings</div>
+</aside>
+<main>
+<header>
+  <div class="crumb" id="crumb">Workspace / Dashboard</div>
+  <div class="user"><span class="avatar">A</span><span>Administrator<br><span style="color:#7b8798;font-weight:400">Finance Team</span></span></div>
+</header>
+<div class="content">
+  <div class="heading">
+    <div><h1 id="pageTitle">Dashboard</h1><div class="sub" id="pageSub">Monitor and manage your payment requests.</div></div>
+    <button class="btn" id="newBtn">＋ New Request</button>
+  </div>
+  <div class="stats">
+    <div class="card"><div class="stat-top">Total Requests <span class="stat-icon">▤</span></div><div class="stat-value" id="total">0</div><div class="stat-foot">All requests</div></div>
+    <div class="card"><div class="stat-top">Pending / Review <span class="stat-icon">◷</span></div><div class="stat-value" id="pending">0</div><div class="stat-foot">Awaiting action</div></div>
+    <div class="card"><div class="stat-top">Paid Requests <span class="stat-icon">✓</span></div><div class="stat-value" id="paid">0</div><div class="stat-foot">Payments processed</div></div>
+    <div class="card"><div class="stat-top">Total Amount <span class="stat-icon">↗</span></div><div class="stat-value" id="amount" style="font-size:22px">Rp 0</div><div class="stat-foot">All request values</div></div>
+  </div>
+  <section class="panel">
+    <div class="panel-head">
+      <div><h2 id="tableTitle">Payment Requests</h2><div class="sub">Search, filter, and review requests.</div></div>
+      <div class="filters">
+        <input id="search" placeholder="Search ID, title, requester..." aria-label="Search requests">
+        <select id="filter"><option value="">All statuses</option><option>Pending</option><option>Review</option><option>Waiting</option><option>Approved</option><option>Finance Request</option><option>Paid</option><option>Attachment Pending</option><option>Completed</option></select>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Request ID</th><th>Title</th><th>Requester</th><th>Date</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty">Belum ada request. Klik “New Request” untuk memulai.</div>
+  </section>
+  <footer>FlowDesk © 2026 · Internal Payment Management</footer>
+</div>
+</main>
+</div>
+
+<div class="overlay" id="overlay">
+<div class="modal">
+  <div class="modal-head"><h2 id="modalTitle">New Payment Request</h2><button class="btn btn-light" id="closeBtn" type="button">✕</button></div>
+  <form id="requestForm">
+    <div class="form-grid">
+      <label class="field full">Request title<input id="title" required maxlength="120" placeholder="e.g. Vendor invoice payment"></label>
+      <label class="field">Requester<input id="requester" required maxlength="100" placeholder="Full name"></label>
+      <label class="field">Amount (IDR)<input id="amountInput" type="number" required min="1" step="1" placeholder="1000000"></label>
+      <label class="field">Entity / Department<input id="entity" maxlength="100" placeholder="Company or department"></label>
+      <label class="field">Due date<input id="dueDate" type="date"></label>
+      <label class="field full">Description<textarea id="description" rows="3" maxlength="1000" placeholder="Payment details..."></textarea></label>
+      <label class="field full">Initial attachment (optional)<input id="attachment" type="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.doc,.docx"></label>
+    </div>
+    <div class="notice">Prototype: request disimpan di browser ini saja. File attachment belum diunggah ke server. Jangan masukkan data pembayaran rahasia.</div>
+    <div class="form-actions"><button class="btn btn-light" type="button" id="cancelBtn">Cancel</button><button class="btn" type="submit">Save Request</button></div>
+  </form>
+</div>
+</div>
+
+<script>
+const STORAGE_KEY = "flowdesk-demo-v1";
+let requests = [];
+let editingId = null;
+
+try {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) requests = JSON.parse(saved);
+} catch (e) {
+  requests = [];
+}
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+function money(n) {
+  return new Intl.NumberFormat("id-ID", {
+    style:"currency",currency:"IDR",maximumFractionDigits:0
+  }).format(Number(n) || 0);
+}
+function persist() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+  } catch (e) {
+    alert("Data tidak dapat disimpan di browser. Periksa kapasitas penyimpanan.");
+  }
+}
+function statusClass(status) {
+  return "s-" + status.toLowerCase().replace(/\s+/g,"-");
+}
+function render() {
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  const f = document.getElementById("filter").value;
+  let list = requests.filter(r =>
+    [r.id,r.title,r.requester,r.entity].join(" ").toLowerCase().includes(q) &&
+    (!f || r.status === f)
+  );
+  const page = document.getElementById("pageTitle").textContent;
+  if (page === "Payment History") list = list.filter(r => ["Paid","Attachment Pending","Completed"].includes(r.status));
+  if (page === "Approvals") list = list.filter(r => ["Pending","Review","Waiting"].includes(r.status));
+
+  document.getElementById("total").textContent = requests.length;
+  document.getElementById("pending").textContent = requests.filter(r => ["Pending","Review","Waiting"].includes(r.status)).length;
+  document.getElementById("paid").textContent = requests.filter(r => ["Paid","Attachment Pending","Completed"].includes(r.status)).length;
+  document.getElementById("amount").textContent = money(requests.reduce((s,r) => s + Number(r.amount),0));
+
+  document.getElementById("rows").innerHTML = list.map(r => `
+    <tr>
+      <td class="id">${escapeHTML(r.id)}</td>
+      <td>${escapeHTML(r.title)}</td>
+      <td>${escapeHTML(r.requester)}</td>
+      <td>${escapeHTML(r.date)}</td>
+      <td class="amount">${money(r.amount)}</td>
+      <td><span class="status ${statusClass(r.status)}">${escapeHTML(r.status)}</span></td>
+      <td><div class="actions">
+        <button class="small-btn" data-action="view" data-id="${escapeHTML(r.id)}">View</button>
+        <button class="small-btn" data-action="edit" data-id="${escapeHTML(r.id)}">Edit</button>
+      </div></td>
+    </tr>
+  `).join("");
+  document.getElementById("empty").hidden = list.length > 0;
+}
+function openForm(id=null) {
+  editingId = id;
+  document.getElementById("requestForm").reset();
+  const r = requests.find(x => x.id === id);
+  document.getElementById("modalTitle").textContent = r ? "Edit Payment Request" : "New Payment Request";
+  if (r) {
+    document.getElementById("title").value = r.title;
+    document.getElementById("requester").value = r.requester;
+    document.getElementById("amountInput").value = r.amount;
+    document.getElementById("entity").value = r.entity || "";
+    document.getElementById("dueDate").value = r.dueDate || "";
+    document.getElementById("description").value = r.description || "";
+  }
+  document.getElementById("overlay").classList.add("open");
+}
+function closeForm() {
+  document.getElementById("overlay").classList.remove("open");
+}
+document.getElementById("newBtn").addEventListener("click", () => openForm());
+document.getElementById("closeBtn").addEventListener("click", closeForm);
+document.getElementById("cancelBtn").addEventListener("click", closeForm);
+document.getElementById("overlay").addEventListener("click", e => {
+  if (e.target.id === "overlay") closeForm();
+});
+document.getElementById("search").addEventListener("input", render);
+document.getElementById("filter").addEventListener("change", render);
+
+document.getElementById("requestForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const title = document.getElementById("title").value.trim();
+  const requester = document.getElementById("requester").value.trim();
+  const amount = Number(document.getElementById("amountInput").value);
+  if (!title || !requester || !Number.isFinite(amount) || amount <= 0) {
+    alert("Isi judul, requester, dan nominal yang valid.");
+    return;
+  }
+  const old = requests.find(r => r.id === editingId);
+  const r = {
+    id: old ? old.id : "PR-" + new Date().getFullYear() + "-" + String(Date.now()).slice(-6),
+    title, requester, amount,
+    entity: document.getElementById("entity").value.trim(),
+    dueDate: document.getElementById("dueDate").value,
+    description: document.getElementById("description").value.trim(),
+    date: old ? old.date : new Date().toLocaleDateString("id-ID"),
+    status: old ? old.status : "Pending",
+    attachmentName: old ? old.attachmentName : "",
+    createdAt: old ? old.createdAt : new Date().toISOString()
+  };
+  const file = document.getElementById("attachment").files[0];
+  if (file) r.attachmentName = file.name;
+  if (old) requests = requests.map(x => x.id === old.id ? r : x);
+  else requests.unshift(r);
+  persist();
+  closeForm();
+  render();
+});
+
+document.getElementById("rows").addEventListener("click", e => {
+  const b = e.target.closest("button[data-action]");
+  if (!b) return;
+  const r = requests.find(x => x.id === b.dataset.id);
+  if (!r) return;
+  if (b.dataset.action === "edit") openForm(r.id);
+  if (b.dataset.action === "view") {
+    alert(
+      "Request: " + r.id +
+      "\nTitle: " + r.title +
+      "\nRequester: " + r.requester +
+      "\nAmount: " + money(r.amount) +
+      "\nStatus: " + r.status +
+      "\nEntity: " + (r.entity || "-") +
+      "\nDue date: " + (r.dueDate || "-") +
+      "\nAttachment filename: " + (r.attachmentName || "Not uploaded")
+    );
+  }
+});
+document.querySelectorAll(".nav").forEach(n => n.addEventListener("click", () => {
+  document.querySelectorAll(".nav").forEach(x => x.classList.remove("active"));
+  n.classList.add("active");
+  document.getElementById("pageTitle").textContent = n.dataset.page;
+  document.getElementById("crumb").textContent = "Workspace / " + n.dataset.page;
+  document.getElementById("tableTitle").textContent = n.dataset.page === "Dashboard" ? "Payment Requests" : n.dataset.page;
+  document.getElementById("pageSub").textContent = {
+    "Dashboard":"Monitor and manage your payment requests.",
+    "Payment Requests":"View and manage payment request records.",
+    "Approvals":"Requests awaiting review or follow-up.",
+    "Payment History":"Requests that have reached the payment stage.",
+    "Settings":"Application preferences."
+  }[n.dataset.page] || "";
+  document.getElementById("newBtn").style.display = n.dataset.page === "Settings" ? "none" : "";
+  render();
+}));
+render();
+</script>
+</body>
+</html>
+
