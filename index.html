@@ -157,7 +157,8 @@ footer{padding:20px 0;font-size:11px;color:var(--muted)}
 
 <script>
 
-const SUPABASE_URL = "https://aspiyuwanda.github.io/FlowDesk/";
+
+const SUPABASE_URL = "https://nnxokxdhdyujawuplugo.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_AyATgwiOOMW1pvhR3ueELg_J4_5GOgk";
 
 const supabaseClient = window.supabase.createClient(
@@ -166,162 +167,412 @@ const supabaseClient = window.supabase.createClient(
 );
 
 let requests = [];
-let editingId = null;
 let currentUser = null;
+let currentRole = "requester";
 
+const appElement = document.querySelector(".app");
+const loginScreen = document.createElement("div");
 
-try {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) requests = JSON.parse(saved);
-} catch (e) {
-  requests = [];
+loginScreen.id = "loginScreen";
+loginScreen.style.cssText = `
+  position:fixed;inset:0;z-index:9999;background:#f5f7fb;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+`;
+
+loginScreen.innerHTML = `
+  <form id="loginForm" style="
+    background:white;padding:32px;border-radius:14px;
+    width:min(400px,100%);box-shadow:0 8px 35px #14243a15;
+  ">
+    <h1 style="font-size:27px;margin:0 0 8px">FlowDesk<span style="color:#4263eb">.</span></h1>
+    <p style="color:#7b8798;font-size:13px;margin-bottom:24px">
+      Sign in to Payment Management
+    </p>
+    <label style="display:block;font-size:12px;font-weight:700;margin-bottom:7px">
+      Email
+    </label>
+    <input id="loginEmail" type="email" required autocomplete="username"
+      style="width:100%;margin-bottom:16px" placeholder="name@company.com">
+    <label style="display:block;font-size:12px;font-weight:700;margin-bottom:7px">
+      Password
+    </label>
+    <input id="loginPassword" type="password" required
+      autocomplete="current-password" style="width:100%;margin-bottom:18px"
+      placeholder="Password">
+    <button id="loginButton" type="submit"
+      style="width:100%;border:0;border-radius:8px;padding:12px;
+      background:#4263eb;color:white;font-weight:700;cursor:pointer">
+      Sign In
+    </button>
+    <p id="loginMessage" role="status"
+      style="font-size:12px;color:#c43e4d;line-height:1.5"></p>
+  </form>
+`;
+
+document.body.appendChild(loginScreen);
+appElement.style.display = "none";
+
+function showLogin(message = "") {
+  appElement.style.display = "none";
+  loginScreen.style.display = "flex";
+  document.getElementById("loginMessage").textContent = message;
+}
+
+function showApp() {
+  loginScreen.style.display = "none";
+  appElement.style.display = "";
+  const name = currentUser?.email || "User";
+  document.querySelector(".user").innerHTML = `
+    <span class="avatar">A</span>
+    <span>${escapeHTML(name)}
+      <br><span style="color:#7b8798;font-weight:400">${escapeHTML(currentRole)}</span>
+    </span>
+    <button id="logoutButton" class="btn btn-light" type="button">Logout</button>
+  `;
+  document.getElementById("logoutButton").addEventListener("click", logout);
 }
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
   }[c]));
 }
-function money(n) {
+
+function money(value) {
   return new Intl.NumberFormat("id-ID", {
-    style:"currency",currency:"IDR",maximumFractionDigits:0
-  }).format(Number(n) || 0);
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0
+  }).format(Number(value) || 0);
 }
-function persist() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
-  } catch (e) {
-    alert("Data tidak dapat disimpan di browser. Periksa kapasitas penyimpanan.");
-  }
-}
+
 function statusClass(status) {
-  return "s-" + status.toLowerCase().replace(/\s+/g,"-");
+  return "s-" + String(status || "Pending").toLowerCase().replace(/\s+/g, "-");
 }
+
+function mapRequest(row) {
+  return {
+    id: row.id,
+    requestNumber: row.request_number,
+    title: row.title,
+    requester: row.requester_name,
+    requesterEmail: row.requester_email,
+    requesterId: row.requester_id,
+    amount: Number(row.amount),
+    entity: row.entity || "",
+    dueDate: row.due_date || "",
+    description: row.description || "",
+    date: row.created_at
+      ? new Date(row.created_at).toLocaleDateString("id-ID")
+      : "",
+    status: row.status
+  };
+}
+
+async function loadRequests() {
+  const { data, error } = await supabaseClient
+    .from("payment_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Load requests error:", error);
+    alert("Gagal memuat request: " + error.message);
+    return;
+  }
+
+  requests = (data || []).map(mapRequest);
+  render();
+}
+
+async function loadProfile() {
+  const { data, error } = await supabaseClient
+    .from("user_profiles")
+    .select("full_name, role")
+    .eq("id", currentUser.id)
+    .single();
+
+  if (error || !data) {
+    console.error("Profile error:", error);
+    await supabaseClient.auth.signOut();
+    currentUser = null;
+    showLogin("Profil akun belum tersedia. Hubungi Super Admin.");
+    return false;
+  }
+
+  currentRole = data.role;
+  return true;
+}
+
+async function startApp(user) {
+  currentUser = user;
+
+  const profileReady = await loadProfile();
+  if (!profileReady) return;
+
+  showApp();
+  await loadRequests();
+}
+
+async function logout() {
+  const { error } = await supabaseClient.auth.signOut();
+
+  if (error) {
+    alert("Gagal logout: " + error.message);
+    return;
+  }
+
+  currentUser = null;
+  currentRole = "requester";
+  requests = [];
+  showLogin();
+}
+
+document.getElementById("loginForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const button = document.getElementById("loginButton");
+  const message = document.getElementById("loginMessage");
+  button.disabled = true;
+  button.textContent = "Signing in...";
+  message.textContent = "";
+
+  try {
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    await startApp(data.user);
+  } catch (error) {
+    console.error("Login error:", error);
+    message.textContent = "Login gagal. Periksa email, password, dan profil akun.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Sign In";
+  }
+});
+
 function render() {
-  const q = document.getElementById("search").value.trim().toLowerCase();
-  const f = document.getElementById("filter").value;
-  let list = requests.filter(r =>
-    [r.id,r.title,r.requester,r.entity].join(" ").toLowerCase().includes(q) &&
-    (!f || r.status === f)
+  const search = document.getElementById("search").value.trim().toLowerCase();
+  const filter = document.getElementById("filter").value;
+
+  let list = requests.filter(request =>
+    [
+      request.id,
+      request.requestNumber,
+      request.title,
+      request.requester,
+      request.entity
+    ].join(" ").toLowerCase().includes(search) &&
+    (!filter || request.status === filter)
   );
+
   const page = document.getElementById("pageTitle").textContent;
-  if (page === "Payment History") list = list.filter(r => ["Paid","Attachment Pending","Completed"].includes(r.status));
-  if (page === "Approvals") list = list.filter(r => ["Pending","Review","Waiting"].includes(r.status));
+
+  if (page === "Payment History") {
+    list = list.filter(request =>
+      ["Paid", "Attachment Pending", "Completed"].includes(request.status)
+    );
+  }
+
+  if (page === "Approvals") {
+    list = list.filter(request =>
+      ["Pending", "Review", "Waiting"].includes(request.status)
+    );
+  }
 
   document.getElementById("total").textContent = requests.length;
-  document.getElementById("pending").textContent = requests.filter(r => ["Pending","Review","Waiting"].includes(r.status)).length;
-  document.getElementById("paid").textContent = requests.filter(r => ["Paid","Attachment Pending","Completed"].includes(r.status)).length;
-  document.getElementById("amount").textContent = money(requests.reduce((s,r) => s + Number(r.amount),0));
+  document.getElementById("pending").textContent = requests.filter(request =>
+    ["Pending", "Review", "Waiting"].includes(request.status)
+  ).length;
+  document.getElementById("paid").textContent = requests.filter(request =>
+    ["Paid", "Attachment Pending", "Completed"].includes(request.status)
+  ).length;
+  document.getElementById("amount").textContent = money(
+    requests.reduce((sum, request) => sum + Number(request.amount), 0)
+  );
 
-  document.getElementById("rows").innerHTML = list.map(r => `
+  document.getElementById("rows").innerHTML = list.map(request => `
     <tr>
-      <td class="id">${escapeHTML(r.id)}</td>
-      <td>${escapeHTML(r.title)}</td>
-      <td>${escapeHTML(r.requester)}</td>
-      <td>${escapeHTML(r.date)}</td>
-      <td class="amount">${money(r.amount)}</td>
-      <td><span class="status ${statusClass(r.status)}">${escapeHTML(r.status)}</span></td>
-      <td><div class="actions">
-        <button class="small-btn" data-action="view" data-id="${escapeHTML(r.id)}">View</button>
-        <button class="small-btn" data-action="edit" data-id="${escapeHTML(r.id)}">Edit</button>
-      </div></td>
+      <td class="id">${escapeHTML(request.requestNumber || request.id)}</td>
+      <td>${escapeHTML(request.title)}</td>
+      <td>${escapeHTML(request.requester)}</td>
+      <td>${escapeHTML(request.date)}</td>
+      <td class="amount">${money(request.amount)}</td>
+      <td><span class="status ${statusClass(request.status)}">${escapeHTML(request.status)}</span></td>
+      <td>
+        <div class="actions">
+          <button class="small-btn" data-action="view" data-id="${escapeHTML(request.id)}">View</button>
+        </div>
+      </td>
     </tr>
   `).join("");
+
   document.getElementById("empty").hidden = list.length > 0;
 }
-function openForm(id=null) {
-  editingId = id;
-  document.getElementById("requestForm").reset();
-  const r = requests.find(x => x.id === id);
-  document.getElementById("modalTitle").textContent = r ? "Edit Payment Request" : "New Payment Request";
-  if (r) {
-    document.getElementById("title").value = r.title;
-    document.getElementById("requester").value = r.requester;
-    document.getElementById("amountInput").value = r.amount;
-    document.getElementById("entity").value = r.entity || "";
-    document.getElementById("dueDate").value = r.dueDate || "";
-    document.getElementById("description").value = r.description || "";
+
+function openForm() {
+  if (!currentUser) {
+    showLogin();
+    return;
   }
+
+  document.getElementById("requestForm").reset();
+  document.getElementById("modalTitle").textContent = "New Payment Request";
   document.getElementById("overlay").classList.add("open");
 }
+
 function closeForm() {
   document.getElementById("overlay").classList.remove("open");
 }
-document.getElementById("newBtn").addEventListener("click", () => openForm());
+
+document.getElementById("newBtn").addEventListener("click", openForm);
 document.getElementById("closeBtn").addEventListener("click", closeForm);
 document.getElementById("cancelBtn").addEventListener("click", closeForm);
-document.getElementById("overlay").addEventListener("click", e => {
-  if (e.target.id === "overlay") closeForm();
+
+document.getElementById("overlay").addEventListener("click", event => {
+  if (event.target.id === "overlay") closeForm();
 });
+
 document.getElementById("search").addEventListener("input", render);
 document.getElementById("filter").addEventListener("change", render);
 
-document.getElementById("requestForm").addEventListener("submit", e => {
-  e.preventDefault();
+document.getElementById("requestForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (!currentUser) {
+    alert("Silakan login terlebih dahulu.");
+    return;
+  }
+
   const title = document.getElementById("title").value.trim();
   const requester = document.getElementById("requester").value.trim();
   const amount = Number(document.getElementById("amountInput").value);
+  const entity = document.getElementById("entity").value.trim();
+  const dueDate = document.getElementById("dueDate").value;
+  const description = document.getElementById("description").value.trim();
+
   if (!title || !requester || !Number.isFinite(amount) || amount <= 0) {
     alert("Isi judul, requester, dan nominal yang valid.");
     return;
   }
-  const old = requests.find(r => r.id === editingId);
-  const r = {
-    id: old ? old.id : "PR-" + new Date().getFullYear() + "-" + String(Date.now()).slice(-6),
-    title, requester, amount,
-    entity: document.getElementById("entity").value.trim(),
-    dueDate: document.getElementById("dueDate").value,
-    description: document.getElementById("description").value.trim(),
-    date: old ? old.date : new Date().toLocaleDateString("id-ID"),
-    status: old ? old.status : "Pending",
-    attachmentName: old ? old.attachmentName : "",
-    createdAt: old ? old.createdAt : new Date().toISOString()
-  };
-  const file = document.getElementById("attachment").files[0];
-  if (file) r.attachmentName = file.name;
-  if (old) requests = requests.map(x => x.id === old.id ? r : x);
-  else requests.unshift(r);
-  persist();
-  closeForm();
-  render();
-});
 
-document.getElementById("rows").addEventListener("click", e => {
-  const b = e.target.closest("button[data-action]");
-  if (!b) return;
-  const r = requests.find(x => x.id === b.dataset.id);
-  if (!r) return;
-  if (b.dataset.action === "edit") openForm(r.id);
-  if (b.dataset.action === "view") {
-    alert(
-      "Request: " + r.id +
-      "\nTitle: " + r.title +
-      "\nRequester: " + r.requester +
-      "\nAmount: " + money(r.amount) +
-      "\nStatus: " + r.status +
-      "\nEntity: " + (r.entity || "-") +
-      "\nDue date: " + (r.dueDate || "-") +
-      "\nAttachment filename: " + (r.attachmentName || "Not uploaded")
-    );
+  const button = document.querySelector('#requestForm button[type="submit"]');
+  button.disabled = true;
+
+  try {
+    const payload = {
+      requester_id: currentUser.id,
+      title,
+      requester_name: requester,
+      requester_email: currentUser.email,
+      entity: entity || null,
+      description: description || null,
+      amount,
+      due_date: dueDate || null,
+      status: "Pending",
+      attachment_complete: false
+    };
+
+    const { data, error } = await supabaseClient
+      .from("payment_requests")
+      .insert(payload)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+
+    requests.unshift(mapRequest(data));
+    closeForm();
+    render();
+    alert("Payment request berhasil disimpan.");
+  } catch (error) {
+    console.error("Save request error:", error);
+    alert("Request gagal disimpan: " + error.message);
+  } finally {
+    button.disabled = false;
   }
 });
-document.querySelectorAll(".nav").forEach(n => n.addEventListener("click", () => {
-  document.querySelectorAll(".nav").forEach(x => x.classList.remove("active"));
-  n.classList.add("active");
-  document.getElementById("pageTitle").textContent = n.dataset.page;
-  document.getElementById("crumb").textContent = "Workspace / " + n.dataset.page;
-  document.getElementById("tableTitle").textContent = n.dataset.page === "Dashboard" ? "Payment Requests" : n.dataset.page;
-  document.getElementById("pageSub").textContent = {
-    "Dashboard":"Monitor and manage your payment requests.",
-    "Payment Requests":"View and manage payment request records.",
-    "Approvals":"Requests awaiting review or follow-up.",
-    "Payment History":"Requests that have reached the payment stage.",
-    "Settings":"Application preferences."
-  }[n.dataset.page] || "";
-  document.getElementById("newBtn").style.display = n.dataset.page === "Settings" ? "none" : "";
-  render();
-}));
-render();
+
+document.getElementById("rows").addEventListener("click", event => {
+  const button = event.target.closest('button[data-action="view"]');
+  if (!button) return;
+
+  const request = requests.find(item => item.id === button.dataset.id);
+  if (!request) return;
+
+  alert(
+    "Request: " + (request.requestNumber || request.id) +
+    "\nTitle: " + request.title +
+    "\nRequester: " + request.requester +
+    "\nAmount: " + money(request.amount) +
+    "\nStatus: " + request.status +
+    "\nEntity: " + (request.entity || "-") +
+    "\nDue date: " + (request.dueDate || "-")
+  );
+});
+
+document.querySelectorAll(".nav").forEach(nav => {
+  nav.addEventListener("click", () => {
+    document.querySelectorAll(".nav").forEach(item => item.classList.remove("active"));
+    nav.classList.add("active");
+
+    document.getElementById("pageTitle").textContent = nav.dataset.page;
+    document.getElementById("crumb").textContent = "Workspace / " + nav.dataset.page;
+    document.getElementById("tableTitle").textContent =
+      nav.dataset.page === "Dashboard" ? "Payment Requests" : nav.dataset.page;
+
+    document.getElementById("pageSub").textContent = {
+      "Dashboard": "Monitor and manage your payment requests.",
+      "Payment Requests": "View and manage payment request records.",
+      "Approvals": "Requests awaiting review or follow-up.",
+      "Payment History": "Requests that have reached the payment stage.",
+      "Settings": "Application preferences."
+    }[nav.dataset.page] || "";
+
+    document.getElementById("newBtn").style.display =
+      nav.dataset.page === "Settings" ? "none" : "";
+
+    render();
+  });
+});
+
+async function initializeFlowDesk() {
+  showLogin();
+
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    console.error("Session error:", error);
+    showLogin("Gagal memeriksa sesi. Muat ulang halaman.");
+    return;
+  }
+
+  if (data.session?.user) {
+    await startApp(data.session.user);
+  }
+}
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (event === "SIGNED_OUT") {
+    currentUser = null;
+    requests = [];
+    showLogin();
+  }
+});
+
+initializeFlowDesk();
+
 </script>
 </body>
 </html>
