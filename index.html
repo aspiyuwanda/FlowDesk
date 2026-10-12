@@ -412,7 +412,48 @@ function render() {
       <td><span class="status ${statusClass(request.status)}">${escapeHTML(request.status)}</span></td>
       <td>
         <div class="actions">
-          <button class="small-btn" data-action="view" data-id="${escapeHTML(request.id)}">View</button>
+         <button
+  class="small-btn"
+  data-action="view"
+  data-id="${escapeHTML(request.id)}"
+>
+  View
+</button>
+
+${
+  currentRole === "super_admin" || currentRole === "reviewer"
+    ? (
+        request.status === "Pending"
+          ? `
+            <button
+              class="small-btn"
+              data-action="review"
+              data-id="${escapeHTML(request.id)}"
+            >
+              Start Review
+            </button>
+          `
+          : request.status === "Review"
+            ? `
+              <button
+                class="small-btn"
+                data-action="approve"
+                data-id="${escapeHTML(request.id)}"
+              >
+                Approve
+              </button>
+              <button
+                class="small-btn"
+                data-action="reject"
+                data-id="${escapeHTML(request.id)}"
+              >
+                Reject
+              </button>
+            `
+            : ""
+      )
+    : ""
+}
         </div>
       </td>
     </tr>
@@ -504,23 +545,74 @@ document.getElementById("requestForm").addEventListener("submit", async event =>
   }
 });
 
-document.getElementById("rows").addEventListener("click", event => {
-  const button = event.target.closest('button[data-action="view"]');
+
+document.getElementById("rows").addEventListener("click", async event => {
+  const button = event.target.closest("button[data-action]");
   if (!button) return;
 
   const request = requests.find(item => item.id === button.dataset.id);
   if (!request) return;
 
-  alert(
-    "Request: " + (request.requestNumber || request.id) +
-    "\nTitle: " + request.title +
-    "\nRequester: " + request.requester +
-    "\nAmount: " + money(request.amount) +
-    "\nStatus: " + request.status +
-    "\nEntity: " + (request.entity || "-") +
-    "\nDue date: " + (request.dueDate || "-")
-  );
+  const action = button.dataset.action;
+
+  if (action === "view") {
+    alert(
+      "Request: " + (request.requestNumber || request.id) +
+      "\nTitle: " + request.title +
+      "\nRequester: " + request.requester +
+      "\nAmount: " + money(request.amount) +
+      "\nStatus: " + request.status +
+      "\nEntity: " + (request.entity || "-") +
+      "\nDue date: " + (request.dueDate || "-")
+    );
+    return;
+  }
+
+  const transitions = {
+    review: { from: "Pending", to: "Review", label: "Start Review" },
+    approve: { from: "Review", to: "Approved", label: "Approve" },
+    reject: { from: "Review", to: "Waiting", label: "Reject" },
+    finance: { from: "Approved", to: "Finance Request", label: "Finance Request" },
+    paid: { from: "Finance Request", to: "Paid", label: "Mark Paid" }
+  };
+
+  const transition = transitions[action];
+  if (!transition) return;
+
+  if (request.status !== transition.from) {
+    alert("Status request sekarang: " + request.status +
+      ". Aksi ini membutuhkan status " + transition.from + ".");
+    return;
+  }
+
+  if (!confirm(
+    "Yakin menjalankan " + transition.label +
+    " untuk request " + (request.requestNumber || request.id) + "?"
+  )) return;
+
+  button.disabled = true;
+
+  try {
+    const { data, error } = await supabaseClient.rpc(
+      "flowdesk_update_status",
+      {
+        p_request_id: request.id,
+        p_new_status: transition.to
+      }
+    );
+
+    if (error) throw error;
+
+    alert("Status berhasil diubah menjadi " + transition.to + ".");
+    await loadRequests();
+  } catch (error) {
+    console.error("Workflow update error:", error);
+    alert("Gagal mengubah status: " + error.message);
+  } finally {
+    button.disabled = false;
+  }
 });
+
 
 document.querySelectorAll(".nav").forEach(nav => {
   nav.addEventListener("click", () => {
